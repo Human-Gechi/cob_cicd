@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: [dev, prod]
+        environment: [dev]
     steps:
       - uses: actions/checkout@v4
 
