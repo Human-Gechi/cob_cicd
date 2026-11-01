@@ -1,4 +1,4 @@
-bucket       = ""
+bucket       = "prod-backend-bucket"
 key          = "cob-mainwebsite/prod/terraform.tfstate"
 region       = "eu-north-1"
 encrypt      = true

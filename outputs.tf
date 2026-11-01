@@ -1,5 +1,5 @@
 output "website_urls" {
-  value       = [for ip in module.web.public_ips : "http://${ip}"]
+  value = [for ip in module.web.public_ips : "http://${ip}"]
 }
 
 output "assets_bucket" {

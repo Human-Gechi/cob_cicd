@@ -9,7 +9,7 @@ module "network" {
 
   vpc_cidr           = var.vpc_cidr
   az_count           = 2
-  enable_nat_gateway = false 
+  enable_nat_gateway = false
 }
 
 module "assets" {
@@ -46,13 +46,9 @@ module "web" {
   instance_type  = var.instance_type
   instance_count = var.instance_count
 
-    user_data = <<-EOT
-    #!/bin/bash
-    set -euxo pipefail
-    dnf install -y nginx
-    echo '${base64encode(file("${path.module}/website/index.html"))}' | base64 -d > /usr/share/nginx/html/index.html
-    systemctl enable --now nginx
-  EOT
+  user_data = templatefile("${path.module}/site/user_data.sh.tftpl", {
+    index_html_b64 = base64encode(file("${path.module}/site/index.html"))
+  })
 }
 
 data "aws_iam_policy_document" "web_assets_read" {
@@ -83,7 +79,7 @@ module "iam" {
   extra_tags   = var.extra_tags
 
   team_access = {
-    Engineering = {
+    Data = {
       s3_write_arns = [module.assets.bucket_arn]
     }
   }
@@ -105,4 +101,178 @@ module "database" {
 
   engine_version = "16"
   db_name        = "webapp"
+}
+
+data "aws_caller_identity" "current" {}
+
+locals {
+  account_id = data.aws_caller_identity.current.account_id
+}
+
+data "aws_iam_policy_document" "runtime_permissions" {
+  statement {
+    sid    = "TerraformState"
+    effect = "Allow"
+
+    actions = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+    resources = [
+      "arn:aws:s3:::${var.state_bucket}/cob-mainwebsite/${var.environment}/*"
+    ]
+  }
+
+  statement {
+    sid    = "TerraformStateList"
+    effect = "Allow"
+
+    actions   = ["s3:ListBucket"]
+    resources = ["arn:aws:s3:::${var.state_bucket}"]
+  }
+
+  statement {
+    sid    = "ProjectBuckets"
+    effect = "Allow"
+
+    actions = ["s3:*"]
+    resources = [
+      "arn:aws:s3:::beejan-mainwebsite-${var.environment}-*",
+      "arn:aws:s3:::beejan-mainwebsite-${var.environment}-*/*"
+    ]
+  }
+
+  statement {
+    sid    = "Network"
+    effect = "Allow"
+
+    actions   = ["ec2:*"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestedRegion"
+      values   = ["eu-north-1"]
+    }
+  }
+
+  statement {
+    sid    = "AmiLookup"
+    effect = "Allow"
+
+    actions = ["ssm:GetParameter"]
+    resources = [
+      "arn:aws:ssm:eu-west-1::parameter/aws/service/ami-amazon-linux-latest/*"
+    ]
+  }
+
+  statement {
+    sid    = "ProjectIamRoles"
+    effect = "Allow"
+
+    actions = [
+      "iam:CreateRole",
+      "iam:DeleteRole",
+      "iam:GetRole",
+      "iam:UpdateAssumeRolePolicy",
+      "iam:TagRole",
+      "iam:UntagRole",
+      "iam:ListRolePolicies",
+      "iam:ListAttachedRolePolicies",
+      "iam:ListInstanceProfilesForRole",
+      "iam:PutRolePolicy",
+      "iam:GetRolePolicy",
+      "iam:DeleteRolePolicy",
+      "iam:DetachRolePolicy"
+    ]
+    resources = ["arn:aws:iam::${local.account_id}:role/beejan-mainwebsite-${var.environment}-*"]
+  }
+
+  statement {
+    sid    = "AttachOnlyApprovedPolicies"
+    effect = "Allow"
+
+    actions = ["iam:AttachRolePolicy"]
+    resources = [
+      "arn:aws:iam::${local.account_id}:role/beejan-mainwebsite-${var.environment}-*"
+    ]
+
+    condition {
+      test     = "ArnLike"
+      variable = "iam:PolicyARN"
+      values = [
+        "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+        "arn:aws:iam::${local.account_id}:policy/beejan-mainwebsite-${var.environment}-*"
+      ]
+    }
+  }
+
+  statement {
+    sid    = "ProjectIamPolicies"
+    effect = "Allow"
+
+    actions = [
+      "iam:CreatePolicy",
+      "iam:DeletePolicy",
+      "iam:GetPolicy",
+      "iam:GetPolicyVersion",
+      "iam:ListPolicyVersions",
+      "iam:CreatePolicyVersion",
+      "iam:DeletePolicyVersion",
+      "iam:TagPolicy",
+      "iam:UntagPolicy"
+    ]
+    resources = ["arn:aws:iam::${local.account_id}:policy/beejan-mainwebsite-${var.environment}-*"]
+  }
+
+  statement {
+    sid    = "ProjectInstanceProfiles"
+    effect = "Allow"
+
+    actions = [
+      "iam:CreateInstanceProfile",
+      "iam:DeleteInstanceProfile",
+      "iam:GetInstanceProfile",
+      "iam:AddRoleToInstanceProfile",
+      "iam:RemoveRoleFromInstanceProfile",
+      "iam:TagInstanceProfile",
+      "iam:UntagInstanceProfile"
+    ]
+    resources = ["arn:aws:iam::${local.account_id}:instance-profile/beejan-mainwebsite-${var.environment}-*"]
+  }
+
+  statement {
+    sid    = "PassRoleToEc2Only"
+    effect = "Allow"
+
+    actions   = ["iam:PassRole"]
+    resources = ["arn:aws:iam::${local.account_id}:role/beejan-mainwebsite-${var.environment}-*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["ec2.amazonaws.com"]
+    }
+  }
+
+  statement {
+    sid    = "OptionalDatabase"
+    effect = "Allow"
+
+    actions   = ["rds:*"]
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestedRegion"
+      values   = ["eu-north-1"]
+    }
+  }
+}
+
+resource "aws_iam_policy" "runtime_permissions" {
+  name   = "${var.project}-${var.environment}-runtime-permissions"
+  policy = data.aws_iam_policy_document.runtime_permissions.json
+}
+
+resource "aws_iam_role_policy_attachment" "web_runtime_permissions" {
+  role       = module.web.role_name
+  policy_arn = aws_iam_policy.runtime_permissions.arn
 }
