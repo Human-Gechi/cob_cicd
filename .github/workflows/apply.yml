@@ -1,0 +1,90 @@
+name: Terraform apply
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-apply
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev, prod]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.17.1"
+          terraform_wrapper: false
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars[format('AWS_ROLE_ARN_{0}', matrix.environment)] }}
+          aws-region: eu-north-1
+
+      - name: Init
+        run: terraform init -input=false -backend-config=backend/${{ matrix.environment }}.hcl
+
+      - name: Format check
+        run: terraform fmt -check -recursive
+
+      - name: Validate
+        run: terraform validate
+
+      - name: Plan
+        run: |
+          terraform plan -input=false -lock-timeout=5m \
+            -var-file=envs/${{ matrix.environment }}.tfvars -out=tfplan
+          terraform show -no-color tfplan > plan.txt
+          {
+            echo "### Terraform plan: ${{ matrix.environment }}"
+            echo '```'
+            head -c 60000 plan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ matrix.environment }}
+          path: tfplan
+          retention-days: 7
+
+  apply:
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1 
+      matrix:
+        environment: [dev, prod]
+    environment: ${{ matrix.environment }} 
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.17.1"
+          terraform_wrapper: false
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars[format('AWS_ROLE_ARN_{0}', matrix.environment)] }}
+          aws-region: eu-west-1
+
+      - name: Init
+        run: terraform init -input=false -backend-config=backend/${{ matrix.environment }}.hcl
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ matrix.environment }}
+
+      - name: Apply the reviewed plan
+        run: terraform apply -input=false -lock-timeout=5m tfplan
