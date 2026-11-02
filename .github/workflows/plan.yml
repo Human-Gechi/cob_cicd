@@ -14,18 +14,12 @@ jobs:
       matrix:
         environment: [dev, prod]
     steps:
-
-      - name: Show OIDC claims
+      - uses: actions/checkout@v4
+      - name: Show context
         run: |
-            TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r .value)
-            echo "$TOKEN" | python3 -c "import sys,json,base64; p=sys.stdin.read().split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p)); print(c.get('sub'))"
-            - uses: actions/checkout@v4
-            - name: Show context
-                run: |
-                echo "event=${{ github.event_name }}"
-                echo "ref=${{ github.ref }}"
-                echo "role=${{ vars[format('AWS_ROLE_ARN_{0}', matrix.environment)] }}"
+          echo "event=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "role=${{ vars[format('AWS_ROLE_ARN_{0}', matrix.environment)] }}"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
