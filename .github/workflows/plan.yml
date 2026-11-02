@@ -15,6 +15,12 @@ jobs:
         environment: [dev, prod]
     steps:
       - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.17.1"
+          terraform_wrapper: false
+
       - name: Show context
         run: |
           echo "event=${{ github.event_name }}"
