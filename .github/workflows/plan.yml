@@ -33,6 +33,12 @@ jobs:
           role-to-assume: ${{ vars[format('AWS_ROLE_ARN_{0}', matrix.environment)] }}
           aws-region: eu-north-1
 
+      - name: Debug AWS identity and bucket region
+        run: |
+          aws sts get-caller-identity
+          echo "AWS_REGION env: $AWS_REGION"
+          aws s3api get-bucket-location --bucket dev-backend-bucket
+
       - name: Init
         run: terraform init -input=false -backend-config=backend/${{ matrix.environment }}.hcl
 
