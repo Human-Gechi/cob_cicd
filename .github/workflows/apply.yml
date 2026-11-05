@@ -33,7 +33,7 @@ jobs:
       - name: Format check
         run: terraform fmt -check -recursive
 
-      - name: Validate
+      - name: Validate *.tf
         run: terraform validate
 
       - name: Plan
