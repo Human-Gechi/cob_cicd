@@ -1,5 +1,5 @@
 output "website_urls" {
-  value       = [for ip in module.web.public_ips : "http://${ip}"]
+  value = [for ip in module.web.public_ips : "http://${ip}"]
 }
 
 output "assets_bucket" {
@@ -10,7 +10,7 @@ output "vpc_id" {
   value = module.network.vpc_id
 }
 
-output "data_team_role_arn" {
+output "engineering_team_role_arn" {
   value = module.iam.team_role_arns["Engineering"]
 }
 

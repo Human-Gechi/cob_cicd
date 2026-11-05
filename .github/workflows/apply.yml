@@ -1,16 +1,12 @@
 name: Terraform apply
 
-on:
-  push:
-    branches: [main]
-
 permissions:
   contents: read
   id-token: write
 
-concurrency:
-  group: terraform-apply
-  cancel-in-progress: false
+on:
+  push:
+    branches: [main]
 
 jobs:
   plan:
@@ -42,8 +38,9 @@ jobs:
 
       - name: Plan
         run: |
-          terraform plan -input=false -lock-timeout=5m \
-            -var-file=envs/${{ matrix.environment }}.tfvars -out=tfplan
+          terraform plan \
+            -input=false \
+            -var-file=env/${{ matrix.environment }}/${{ matrix.environment }}.tfvars -out=tfplan
           terraform show -no-color tfplan > plan.txt
           {
             echo "### Terraform plan: ${{ matrix.environment }}"
@@ -62,10 +59,10 @@ jobs:
     needs: plan
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1 
+      max-parallel: 1
       matrix:
         environment: [dev, prod]
-    environment: ${{ matrix.environment }} 
+    environment: ${{ matrix.environment }}
     steps:
       - uses: actions/checkout@v4
 
@@ -77,7 +74,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars[format('AWS_ROLE_ARN_{0}', matrix.environment)] }}
-          aws-region: eu-west-1
+          aws-region: eu-north-1
 
       - name: Init
         run: terraform init -input=false -backend-config=backend/${{ matrix.environment }}.hcl

@@ -2,21 +2,15 @@ name: Terraform PR checks
 
 on:
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
   id-token: write
 
-concurrency:
-  group: tf-pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
 jobs:
   plan:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
       matrix:
         environment: [dev, prod]
     steps:
@@ -27,9 +21,16 @@ jobs:
           terraform_version: "1.17.1"
           terraform_wrapper: false
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - name: Show context
+        run: |
+          echo "event=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "role=${{ vars[format('AWS_ROLE_ARN_{0}', matrix.environment)] }}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars[format('AWS_ROLE_ARN_{0}', (matrix.environment))] }}
+          role-to-assume: ${{ vars[format('AWS_ROLE_ARN_{0}', matrix.environment)] }}
           aws-region: eu-north-1
 
       - name: Init
@@ -44,7 +45,7 @@ jobs:
       - name: Plan
         run: |
           terraform plan -input=false -lock-timeout=5m \
-            -var-file=envs/${{ matrix.environment }}.tfvars -no-color > plan.txt
+            -var-file=env/${{ matrix.environment }}/${{ matrix.environment }}.tfvars -no-color > plan.txt
           {
             echo "### Terraform plan: ${{ matrix.environment }}"
             echo '```'

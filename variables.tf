@@ -51,6 +51,11 @@ variable "instance_count" {
 }
 
 variable "enable_database" {
-  type        = bool
-  default     = false
+  type    = bool
+  default = false
+}
+
+variable "state_bucket" {
+  description = "Terraform backend S3 bucket name"
+  type        = string
 }
