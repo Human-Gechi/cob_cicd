@@ -61,7 +61,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        environment: [dev, prod]
+        environment: [prod]
     environment: ${{ matrix.environment }}
     steps:
       - uses: actions/checkout@v4
