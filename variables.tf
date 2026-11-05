@@ -52,7 +52,7 @@ variable "instance_count" {
 
 variable "enable_database" {
   type    = bool
-  default = false
+  default = true
 }
 
 variable "state_bucket" {
