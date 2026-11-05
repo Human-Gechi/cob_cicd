@@ -54,3 +54,8 @@ variable "enable_database" {
   type    = bool
   default = false
 }
+
+variable "state_bucket" {
+  description = "Terraform backend S3 bucket name"
+  type        = string
+}
