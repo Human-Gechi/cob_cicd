@@ -116,7 +116,7 @@ data "aws_iam_policy_document" "runtime_permissions" {
 
     actions = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
     resources = [
-      "arn:aws:s3:::${var.state_bucket}/cob-website/${var.environment}/*"
+      "arn:aws:s3:::${var.state_bucket}/cob-mainwebsite/${var.environment}/*"
     ]
   }
 
@@ -134,8 +134,8 @@ data "aws_iam_policy_document" "runtime_permissions" {
 
     actions = ["s3:*"]
     resources = [
-      "arn:aws:s3:::beejan-website-${var.environment}-*",
-      "arn:aws:s3:::beejan-website-${var.environment}-*/*"
+      "arn:aws:s3:::beejan-mainwebsite-${var.environment}-*",
+      "arn:aws:s3:::beejan-mainwebsite-${var.environment}-*/*"
     ]
   }
 
@@ -182,7 +182,7 @@ data "aws_iam_policy_document" "runtime_permissions" {
       "iam:DeleteRolePolicy",
       "iam:DetachRolePolicy"
     ]
-    resources = ["arn:aws:iam::${local.account_id}:role/beejan-website-${var.environment}-*"]
+    resources = ["arn:aws:iam::${local.account_id}:role/beejan-mainwebsite-${var.environment}-*"]
   }
 
   statement {
@@ -191,7 +191,7 @@ data "aws_iam_policy_document" "runtime_permissions" {
 
     actions = ["iam:AttachRolePolicy"]
     resources = [
-      "arn:aws:iam::${local.account_id}:role/beejan-website-${var.environment}-*"
+      "arn:aws:iam::${local.account_id}:role/beejan-mainwebsite-${var.environment}-*"
     ]
 
     condition {
@@ -199,7 +199,7 @@ data "aws_iam_policy_document" "runtime_permissions" {
       variable = "iam:PolicyARN"
       values = [
         "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
-        "arn:aws:iam::${local.account_id}:policy/beejan-website-${var.environment}-*"
+        "arn:aws:iam::${local.account_id}:policy/beejan-mainwebsite-${var.environment}-*"
       ]
     }
   }
@@ -219,7 +219,7 @@ data "aws_iam_policy_document" "runtime_permissions" {
       "iam:TagPolicy",
       "iam:UntagPolicy"
     ]
-    resources = ["arn:aws:iam::${local.account_id}:policy/beejan-website-${var.environment}-*"]
+    resources = ["arn:aws:iam::${local.account_id}:policy/beejan-mainwebsite-${var.environment}-*"]
   }
 
   statement {
@@ -235,7 +235,7 @@ data "aws_iam_policy_document" "runtime_permissions" {
       "iam:TagInstanceProfile",
       "iam:UntagInstanceProfile"
     ]
-    resources = ["arn:aws:iam::${local.account_id}:instance-profile/beejan-website-${var.environment}-*"]
+    resources = ["arn:aws:iam::${local.account_id}:instance-profile/beejan-mainwebsite-${var.environment}-*"]
   }
 
   statement {
@@ -243,7 +243,7 @@ data "aws_iam_policy_document" "runtime_permissions" {
     effect = "Allow"
 
     actions   = ["iam:PassRole"]
-    resources = ["arn:aws:iam::${local.account_id}:role/beejan-website-${var.environment}-*"]
+    resources = ["arn:aws:iam::${local.account_id}:role/beejan-mainwebsite-${var.environment}-*"]
 
     condition {
       test     = "StringEquals"
