@@ -45,7 +45,7 @@ jobs:
       - name: Plan
         run: |
           terraform plan -input=false -lock-timeout=5m \
-            -var-file=env/${{ matrix.environment }}.tfvars -no-color > plan.txt
+            -var-file=env/${{ matrix.environment }}/${{ matrix.environment }}.tfvars -no-color > plan.txt
           {
             echo "### Terraform plan: ${{ matrix.environment }}"
             echo '```'
