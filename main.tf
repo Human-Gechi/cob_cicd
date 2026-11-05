@@ -46,8 +46,8 @@ module "web" {
   instance_type  = var.instance_type
   instance_count = var.instance_count
 
-  user_data = templatefile("${path.module}/site/user_data.sh.tftpl", {
-    index_html_b64 = base64encode(file("${path.module}/site/index.html"))
+  user_data = templatefile("${path.module}/frontend/user_data.sh.tftpl", {
+    index_html_b64 = base64encode(file("${path.module}/frontend/index.html"))
   })
 }
 
