@@ -40,7 +40,7 @@ jobs:
         run: |
           terraform plan \
             -input=false \
-            -var-file=envs/${{ matrix.environment }}.tfvars -out=tfplan
+            -var-file=env/${{ matrix.environment }}.tfvars -out=tfplan
           terraform show -no-color tfplan > plan.txt
           {
             echo "### Terraform plan: ${{ matrix.environment }}"
