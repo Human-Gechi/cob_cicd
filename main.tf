@@ -79,7 +79,7 @@ module "iam" {
   extra_tags   = var.extra_tags
 
   team_access = {
-    Data = {
+    Engineering = {
       s3_write_arns = [module.assets.bucket_arn]
     }
   }
